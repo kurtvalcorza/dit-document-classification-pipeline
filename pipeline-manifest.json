@@ -1,0 +1,25 @@
+{
+  "schemaVersion": "1.0",
+  "pipelineId": "org.valcorza.dit-document-classification",
+  "model": {
+    "id": "microsoft/dit-base-finetuned-rvlcdip",
+    "revision": "23f8b03d130fb66bbc9a15df3c75d753e49240eb",
+    "task": "Image Classification - Document Type",
+    "classes": 16
+  },
+  "roles": {
+    "inference": "LOCAL",
+    "validator": "LOCAL",
+    "evaluator": "LOCAL",
+    "finetuner": "not-implemented-v0.1"
+  },
+  "serving": {
+    "format": "safetensors",
+    "file": "model.safetensors",
+    "sourcePickleServed": false
+  },
+  "release": {
+    "status": "HOLD",
+    "reason": "model-weight redistribution/licence review pending"
+  }
+}
