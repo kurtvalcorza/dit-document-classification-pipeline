@@ -46,3 +46,16 @@ Do not promote the notebook from static parsing, model-double tests or runtime v
 The maintainer-supplied run stopped in setup before model execution: NumPy 2.1.3 was already loaded, while the notebook installed 2.5.3. The [failure record](execution-evidence/2026-09-26/colab-setup-failure.json) records the independently inspected error. The supplemental notebook now pins NumPy 2.1.3, preserving the observed Colab kernel version instead of replacing it. Other model/runtime pins are unchanged; stale-module detection remains enabled. Declared upstream requirements permit 2.1.3 (Transformers and datasets require >=1.17; the closed-set SciPy pin requires >=2.0,<2.8).
 
 A regression executes the real setup prefix against a simulated Colab preloaded NumPy and package installer: it reproduces the original restart error before the fix and completes without a restart after it. This is setup regression evidence, not a full model/Colab rerun. A new hosted Run all is still required to discover any downstream issues. Use a fresh runtime for that rerun; the prior failed session already replaced installed packages.
+
+
+### Maintainer-supplied successful Colab run — 2026-09-26
+
+The maintainer supplied the [executed notebook](execution-evidence/2026-09-26/DIMER_Document_Type_Classification_RVL_CDIP_Workshop.ipynb) and authorized merging PR #1 (merge commit `22b0686`). The file is archived byte-for-byte, SHA-256 `38a6253e8d60a0fc6532b72cbc2efc99aa70480692aebf8860ef8f3b7e1e01cc`. All 19 code cells have execution counts, 30 saved outputs and zero saved errors. Code-cell sources match commit `9e64856d38250b27ce63ff8b9eab2f311061c7b1`, tutorial blob `56fb04d914c2c7836446801ea27aeffd59b02a09`, apart from Colab-inserted `# @title` lines. Later commits on `main` that touch the notebook (`576dba4` (AI Use Disclosure)) change only markdown cells; its code cells are identical to the executed revision. This evidence commit does not change tutorial code.
+
+Scope: Default path: 320 balanced RVL-CDIP-derived pages over 16 classes, checkpoint digest verification, local SafeTensors conversion and the five-variant robustness comparison. BYOD was not exercised.
+
+Saved runtime: Python 3.13.15, torch 2.14.0+cu130, Transformers 4.57.6, datasets 4.1.1, huggingface_hub 0.36.2, NumPy 2.1.3, CUDA Tesla T4. Execution reaches the final completion summary. The separate exported files were not supplied, so their bytes/digests were not independently inspected. Saved counts run sequentially from 1 to 19; runtime freshness and absence of manual restarts/reruns are not independently established by the artifact.
+
+Results (sample-sanity measures on the built-in data, not general model rankings): Accuracy 0.9531, macro F1 0.9530, top-3 accuracy 0.9938 against random and majority baselines of 0.0625; conversion parity maximum absolute logit difference 0.0 (source checkpoint SHA-256 `1b7a901642c3…`, converted SafeTensors `b9484ea5054b…`). Robustness accuracy: original 0.812, rotate90 0.500, rotate180 0.688, low resolution 0.750, centre crop 0.812.
+
+Status remains **Candidate**. Merge approval and this successful default-path run do not close the optional-path (FULL/BYOD) or REL12 qualification gates, and `metadata.dimer.clean_runtime_evidence` in the notebook stays `pending` as authored (editing it would change the verified blob).
