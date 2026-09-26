@@ -130,8 +130,15 @@ def verify_snapshot(path: str | Path | None = None) -> dict[str, Any]:
     parity = manifest.get("conversion", {}).get("parity", {})
     if parity.get("predictedClassIdsIdentical") is not True:
         raise ValueError("conversion parity does not record identical predicted class IDs")
-    if float(parity.get("maxAbsLogitDiff", float("inf"))) > float(parity.get("tolerance", 1e-6)):
-        raise ValueError("conversion parity exceeds the recorded tolerance")
+    difference = parity.get("maxAbsLogitDiff")
+    tolerance = parity.get("tolerance")
+    if any(
+        isinstance(value, bool) or not isinstance(value, (int, float)) for value in (difference, tolerance)
+    ):
+        raise ValueError("conversion parity must record numeric difference and tolerance")
+    # The fixed ceiling also rejects infinity; chained bounds reject NaN and negatives.
+    if not 0 <= difference <= tolerance <= 1e-6:
+        raise ValueError("conversion parity must satisfy 0 <= difference <= tolerance <= 1e-6")
 
     return {
         "path": str(root),
@@ -202,7 +209,10 @@ def validate_dataset(records: Sequence[Mapping[str, Any]], *, require_labels: bo
         if not isinstance(rid, str) or not rid.strip() or rid in seen:
             raise ValueError(f"record id must be a unique non-empty string, got {rid!r}")
         seen.add(rid)
-        _check_images(record.get("image"))
+        image = record.get("image")
+        if not isinstance(image, Image.Image):
+            raise TypeError("each dataset record must contain a single PIL.Image.Image")
+        _check_images(image)
         label = record.get("label")
         if require_labels:
             if label not in counts:

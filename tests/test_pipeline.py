@@ -14,6 +14,7 @@ from dit_document_classification_pipeline import (
     SOURCE_BYTES,
     SOURCE_FILENAME,
     SOURCE_SHA256,
+    DiTDocumentClassificationPipeline,
     classification_metrics,
     validate_dataset,
     validate_inputs,
@@ -64,7 +65,8 @@ def _record(path):
     return {"path": path.name, "bytes": len(content), "sha256": hashlib.sha256(content).hexdigest()}
 
 
-def test_verify_snapshot_accepts_converted_only_serving_shape(tmp_path):
+@pytest.fixture
+def converted_snapshot(tmp_path):
     config = tmp_path / "config.json"
     processor = tmp_path / "preprocessor_config.json"
     weights = tmp_path / "model.safetensors"
@@ -93,10 +95,62 @@ def test_verify_snapshot_accepts_converted_only_serving_shape(tmp_path):
         "files": [_record(config), _record(processor), derived],
     }
     (tmp_path / "dimer-base-manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
+    return tmp_path, manifest
+
+
+def test_verify_snapshot_accepts_converted_only_serving_shape(converted_snapshot):
+    tmp_path, manifest = converted_snapshot
     result = verify_snapshot(tmp_path)
     assert result["source_sha256"] == SOURCE_SHA256
-    assert result["serving_sha256"] == derived["sha256"]
+    assert result["serving_sha256"] == manifest["derived"]["sha256"]
     manifest["source"]["served"] = True
     (tmp_path / "dimer-base-manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
     with pytest.raises(ValueError, match="served=false"):
         verify_snapshot(tmp_path)
+
+
+@pytest.mark.parametrize(
+    "parity",
+    [
+        {"maxAbsLogitDiff": 10, "tolerance": 100},
+        {"maxAbsLogitDiff": 0, "tolerance": 100},
+        {"maxAbsLogitDiff": float("nan"), "tolerance": 1e-6},
+        {"maxAbsLogitDiff": float("inf"), "tolerance": 1e-6},
+        {"maxAbsLogitDiff": -1, "tolerance": 1e-6},
+        {"maxAbsLogitDiff": 0, "tolerance": float("nan")},
+        {"maxAbsLogitDiff": 0, "tolerance": float("inf")},
+        {"maxAbsLogitDiff": 0, "tolerance": -1},
+        {"tolerance": float("inf")},
+        {"maxAbsLogitDiff": 0},
+        {"maxAbsLogitDiff": None, "tolerance": 1e-6},
+        {"maxAbsLogitDiff": False, "tolerance": 1e-6},
+        {"maxAbsLogitDiff": "0", "tolerance": 1e-6},
+        {"maxAbsLogitDiff": 2e-6, "tolerance": 1e-6},
+        {"maxAbsLogitDiff": 1e-6, "tolerance": 1e-7},
+    ],
+)
+def test_verify_snapshot_rejects_invalid_parity(converted_snapshot, parity):
+    root, manifest = converted_snapshot
+    manifest["conversion"]["parity"] = {"predictedClassIdsIdentical": True, **parity}
+    (root / "dimer-base-manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
+    with pytest.raises(ValueError, match="parity"):
+        verify_snapshot(root)
+
+
+@pytest.mark.parametrize("difference,tolerance", [(0, 0), (1e-7, 1e-7), (1e-6, 1e-6)])
+def test_verify_snapshot_accepts_parity_boundary(converted_snapshot, difference, tolerance):
+    root, manifest = converted_snapshot
+    manifest["conversion"]["parity"].update(maxAbsLogitDiff=difference, tolerance=tolerance)
+    (root / "dimer-base-manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
+    assert verify_snapshot(root)["model_id"] == MODEL_ID
+
+
+@pytest.mark.parametrize("container", [list, tuple])
+def test_dataset_and_evaluator_reject_image_batches(container):
+    records = [{"id": "a", "image": container([Image.new("RGB", (64, 64))]), "label": "letter"}]
+    with pytest.raises(TypeError, match="single PIL"):
+        validate_dataset(records)
+    # Validation must reject this before any model or processor is needed.
+    pipeline = DiTDocumentClassificationPipeline.__new__(DiTDocumentClassificationPipeline)
+    with pytest.raises(TypeError, match="single PIL"):
+        pipeline.evaluate(records)
