@@ -1,8 +1,10 @@
-# Document-type classification notebook
+# Tutorials
+
+Notebooks follow DIMER Notebook Specification 2.2.
 
 | Notebook | Profile | Mode | Carrier | Default runtime | Sample | BYOD | Run all | Release status |
 |---|---|---|---|---|---|---|---|---|
-| [Document-Type Classification with DiT](DIMER_Document_Type_Classification_RVL_CDIP_Workshop.ipynb) | `TASK-INFERENCE` | `WORKSHOP` | standalone | CPU or CUDA GPU | deterministic balanced 320-page RVL-CDIP-derived subset, 20 per class | image, directory or ZIP; optional complete filename/label CSV; disabled by default | exact-revision hosted qualification pending; bootstrap may require Restart session | **Candidate** |
+| [Document-Type Classification with DiT](DIMER_Document_Type_Classification_RVL_CDIP_Workshop.ipynb) | `TASK-INFERENCE` | `WORKSHOP` | standalone | CPU or CUDA GPU (T4 verified) | deterministic balanced 320-page RVL-CDIP-derived subset, 20 per class | image, directory or ZIP; optional complete filename/label CSV; disabled by default | PASS on Google Colab T4, 2026-09-26, one `Run all` without restart (blob `56fb04d9`; the current notebook differs only in markdown and metadata) | **Candidate** |
 
 The notebook applies a fixed 16-class classifier to whole document-page images. It does not perform OCR, document QA or model adaptation. Model/data revisions and runtime pins are declared inside the notebook; the task contract is in [the workshop specification](../docs/document-type-classification-workshop-spec.md).
 

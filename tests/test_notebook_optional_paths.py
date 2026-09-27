@@ -7,15 +7,16 @@ import csv
 import hashlib
 import io
 import json
-from pathlib import Path
 import zipfile
+from pathlib import Path
 
 import numpy as np
+import pytest
 from packaging.version import InvalidVersion, Version
 from PIL import Image
-import pytest
 
-NOTEBOOK = Path(__file__).resolve().parents[1] / 'tutorials/DIMER_Document_Type_Classification_RVL_CDIP_Workshop.ipynb'
+ROOT = Path(__file__).resolve().parents[1]
+NOTEBOOK = ROOT / 'tutorials/DIMER_Document_Type_Classification_RVL_CDIP_Workshop.ipynb'
 LABELS = ['letter', 'form', 'email', 'handwritten', 'advertisement', 'scientific report',
           'scientific publication', 'specification', 'file folder', 'news article', 'budget',
           'invoice', 'presentation', 'questionnaire', 'resume', 'memo']
@@ -96,11 +97,13 @@ def test_robustness_gate_and_header_only_export(tmp_path, monkeypatch):
 
 def test_zip_duplicate_refused_and_attempts_do_not_mix(tmp_path, monkeypatch):
     ns, calls = namespace(tmp_path, monkeypatch)
-    path = archive(tmp_path/'duplicate.zip', [('a/page.png', image_bytes()), ('b/page.png', image_bytes('red'))])
+    members = [('a/page.png', image_bytes()), ('b/page.png', image_bytes('red'))]
+    path = archive(tmp_path/'duplicate.zip', members)
     with pytest.raises(ValueError, match='Duplicate image basename'):
         ns['safe_extract_images'](path, tmp_path/'staging')
-    first = ns['safe_extract_images'](archive(tmp_path/'one.zip', [('first.png', image_bytes())]), tmp_path/'staging')
-    second = ns['safe_extract_images'](archive(tmp_path/'two.zip', [('second.png', image_bytes())]), tmp_path/'staging')
+    extract, staging = ns['safe_extract_images'], tmp_path/'staging'
+    first = extract(archive(tmp_path/'one.zip', [('first.png', image_bytes())]), staging)
+    second = extract(archive(tmp_path/'two.zip', [('second.png', image_bytes())]), staging)
     assert first != second
     assert [p.name for p in first.iterdir()] == ['first.png']
     assert [p.name for p in second.iterdir()] == ['second.png']

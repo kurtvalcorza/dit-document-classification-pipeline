@@ -3,6 +3,7 @@ name = "dit-document-classification-pipeline"
 version = "0.1.0"
 description = "DIMER pipeline for Microsoft DiT document-type classification on RVL-CDIP"
 readme = "README.md"
+license = { text = "Apache-2.0" }
 requires-python = ">=3.12,<3.13"
 authors = [{ name = "Kurt Valcorza" }]
 dependencies = [

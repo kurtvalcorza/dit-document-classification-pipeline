@@ -43,6 +43,14 @@ python tools/convert_weights.py --download --remove-source
 
 This produces a converted-only serving snapshot under `weights/dit-base-finetuned-rvlcdip/` and records the source identity, derived SafeTensors identity, tool versions, static pickle audit, and parity evidence in `dimer-base-manifest.json`.
 
+## Tutorial notebook
+
+[`tutorials/DIMER_Document_Type_Classification_RVL_CDIP_Workshop.ipynb`](tutorials/DIMER_Document_Type_Classification_RVL_CDIP_Workshop.ipynb) is a standalone `TASK-INFERENCE` / `WORKSHOP` notebook under DIMER Notebook Specification 2.2. It converts the pinned checkpoint to SafeTensors in the runtime, evaluates a deterministic 320-page RVL-CDIP-derived sample, and offers an optional bring-your-own-pages branch. Its registry entry and verification status are in [`tutorials/README.md`](tutorials/README.md) and [`docs/release-verification.md`](docs/release-verification.md). The model card ([`MODEL_CARD.md`](MODEL_CARD.md)) follows DIMER Model Card Specification 1.2.
+
+## Licence
+
+The code and notebooks in this repository are licensed under Apache-2.0 (`LICENSE`). The model weights are not redistributed here and are not covered by that licence; the upstream model repository declares no model-specific licence (see below).
+
 ## Release status
 
 **HOLD.** The model-specific weight redistribution/licensing position is not explicit on the Hugging Face model repository, and Microsoft's public licensing clarification issue for DiT remains unresolved. The code can be reviewed and qualified, but DIMER public hosting must remain blocked until that decision is documented. See `STATUS.md` and `docs/WEIGHTS.md`.

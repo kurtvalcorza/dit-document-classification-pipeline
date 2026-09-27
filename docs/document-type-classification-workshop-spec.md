@@ -3,7 +3,7 @@
 ## RVL-CDIP with Microsoft Document Image Transformer (DiT)
 
 **Proposed filename:** `DIMER_Document_Type_Classification_RVL_CDIP_Workshop.ipynb`  
-**Notebook Specification:** DIMER `NOTEBOOK_SPEC.md` **v2.1**  
+**Notebook Specification:** DIMER `NOTEBOOK_SPEC.md` **v2.2**  
 **Profile:** `TASK-INFERENCE`  
 **Pedagogical mode:** `WORKSHOP`  
 **Standalone:** `true`  

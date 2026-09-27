@@ -4,12 +4,14 @@ import builtins
 import json
 from pathlib import Path
 
-NOTEBOOK = Path(__file__).resolve().parents[1] / "tutorials" / "DIMER_Document_Type_Classification_RVL_CDIP_Workshop.ipynb"
+ROOT = Path(__file__).resolve().parents[1]
+NOTEBOOK = ROOT / "tutorials" / "DIMER_Document_Type_Classification_RVL_CDIP_Workshop.ipynb"
 
 
 def test_no_undefined_names_across_code_cells():
     # `math` was used by the gallery cell but never imported; the Colab T4 run stopped there.
-    cells = ["".join(c["source"]) for c in json.loads(NOTEBOOK.read_text(encoding="utf-8"))["cells"] if c["cell_type"] == "code"]
+    notebook = json.loads(NOTEBOOK.read_text(encoding="utf-8"))
+    cells = ["".join(c["source"]) for c in notebook["cells"] if c["cell_type"] == "code"]
     tree = ast.parse("\n\n".join(cells))
     bound = set(dir(builtins)) | {"display", "get_ipython"}
     for node in ast.walk(tree):

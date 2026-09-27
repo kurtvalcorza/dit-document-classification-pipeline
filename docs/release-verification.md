@@ -2,7 +2,19 @@
 
 ## Current decision
 
-`tutorials/DIMER_Document_Type_Classification_RVL_CDIP_Workshop.ipynb` remains **Candidate**. No hosted execution or real-model BYOD completion is claimed by this change. Checkpoint redistribution remains `pending-review` and hosting remains `HOLD`, as declared in the notebook; these statuses are not changed by local tests.
+`tutorials/DIMER_Document_Type_Classification_RVL_CDIP_Workshop.ipynb` remains **Candidate** under DIMER Notebook Specification 2.2. Its default path has one successful hosted execution (Google Colab T4, 2026-09-26, recorded below) on notebook blob `56fb04d9`. The current notebook differs from that blob only in markdown and metadata: the declared specification version, the metadata key `notebook_profile`, and a statement that the sample overlaps the model's pre-training corpus and may overlap its fine-tuning data (DAT9). Its code cells are identical. The bring-your-own-pages branch (REL12) has no hosted execution yet. Checkpoint redistribution remains `pending-review`, as declared in the notebook, and local tests do not change it.
+
+## Verification coverage (automatic versus manual)
+
+| Check | How it runs | What it establishes |
+|---|---|---|
+| `ruff check src tests tools` | CI (`.github/workflows/ci.yml`), every pull request and push to `main` | lint only |
+| `pytest` | CI | package validation, metrics and snapshot verification with synthetic fixtures; notebook setup, optional-path and name checks with model doubles; model-card and notebook-metadata conformance |
+| `python tools/validate_release_assets.py` | CI | required files, model-card structure against Model Card Specification 1.2, notebook metadata against Notebook Specification 2.2, tutorials registry row, licence HOLD retained |
+| Notebook `Run all` with the real model | manual, on a hosted GPU runtime | the default path end to end; recorded as a verification record in this file |
+| Bring-your-own-pages branch with the real model | manual, not yet run | REL12 positive and negative BYOD evidence |
+
+CI does not execute the notebook: the default path downloads a 343 MB checkpoint and a public dataset and is meant for a hosted GPU runtime. Static checks and unit tests are not execution evidence (Notebook Specification REL8).
 
 ## Local evidence — 2026-09-26
 
@@ -33,7 +45,7 @@ These tests demonstrate control flow and validation/export behavior. Model doubl
 ## Remaining exact-revision gates
 
 1. Record the final commit and notebook Git blob, a fresh supported Colab runtime, device, package versions, clean-start/cache conditions, settings and all warnings. Execute default Run all with unchanged pins, including checkpoint digest verification, local SafeTensors conversion/parity, sample inference, metrics, robustness, galleries and exports. Retain the executed notebook and output digests.
-2. Runtime bootstrap still uses in-kernel installation. Public version matching avoids rejecting a CUDA local suffix, but does not prove the pin set resolves together. If packages were already imported, use **Runtime → Restart session** to preserve installed packages and then Run all. Record that run as restart-assisted; it is not evidence of uninterrupted fresh-runtime execution. Resolve and qualify that boundary before claiming that gate complete.
+2. Runtime bootstrap uses in-kernel installation and keeps a NumPy 2.x the hosted kernel has already imported. The 2026-09-26 Colab run completed in one `Run all` without a restart. If a future hosted image pre-imports another pinned package, the install cell stops with an instruction to use **Runtime → Restart session**; record any such run as restart-assisted, because it is not evidence of uninterrupted fresh-runtime execution (RUN10).
 3. In a separate supported runtime, use authorized representative document-page images. Set `USE_BYOD=True`, `BYOD_PATH` to a staged ZIP/directory/image, and optionally `BYOD_LABELS_PATH` to a CSV with exactly one valid RVL-CDIP label per selected filename. Run the actual converted DiT model through validation, inference, metrics where labelled, and separate `byod_results.json`/`byod_predictions.csv` exports. Inspect identifiers, input digests, model revision and output counts. Keep sample and BYOD conclusions distinct.
 4. In a separate negative run, supply either duplicate ZIP basenames or a labels CSV missing one image. Require a clear validation error before inference and retain the invalid input digest and rejection output. Also test an incompatible page image against the published shape limits.
 5. Verify both `RUN_ROBUSTNESS` settings in the supported runtime. The disabled path should complete exports and terminal summary without transformed-model inference; the default enabled path must retain the original five-variant comparison. Keep the optional activity exploratory and do not tune on these previously inspected pages.
