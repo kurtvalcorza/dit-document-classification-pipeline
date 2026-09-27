@@ -9,7 +9,8 @@ from types import SimpleNamespace
 
 
 def test_colab_preloaded_numpy_survives_setup(monkeypatch):
-    path = Path(__file__).resolve().parents[1] / "tutorials" / "DIMER_Document_Type_Classification_RVL_CDIP_Workshop.ipynb"
+    root = Path(__file__).resolve().parents[1]
+    path = root / "tutorials" / "DIMER_Document_Type_Classification_RVL_CDIP_Workshop.ipynb"
     notebook = json.loads(path.read_text(encoding="utf-8"))
     tree = ast.parse("".join(notebook["cells"][7]["source"]))
     prefix = []

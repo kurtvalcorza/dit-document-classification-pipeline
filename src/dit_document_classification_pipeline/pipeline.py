@@ -292,7 +292,7 @@ class DiTDocumentClassificationPipeline:
     @classmethod
     def from_pretrained(
         cls, *, weights_dir: str | Path | None = None, device: str | None = None
-    ) -> "DiTDocumentClassificationPipeline":
+    ) -> DiTDocumentClassificationPipeline:
         root = Path(weights_dir) if weights_dir is not None else DEFAULT_WEIGHTS_DIR
         verify_snapshot(root)
         import torch

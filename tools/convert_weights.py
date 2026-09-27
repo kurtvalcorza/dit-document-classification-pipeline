@@ -8,7 +8,6 @@ config.json, preprocessor_config.json, and dimer-base-manifest.json.
 from __future__ import annotations
 
 import argparse
-import hashlib
 import json
 import pickletools
 import platform
