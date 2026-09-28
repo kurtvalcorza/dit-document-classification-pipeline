@@ -2,7 +2,7 @@
 
 ## Current decision
 
-`tutorials/DIMER_Document_Type_Classification_RVL_CDIP_Workshop.ipynb` remains **Candidate** under DIMER Notebook Specification 2.2. Its default path has one successful hosted execution (Google Colab T4, 2026-09-26, recorded below) on notebook blob `56fb04d9`. The 2026-09-28 review fixes (below) change code cells, so that run no longer covers the current notebook: **Verification pending** until a hosted Run all of the fixed revision is recorded. The bring-your-own-pages branch (REL12) has no hosted execution yet. Checkpoint redistribution remains `pending-review`, as declared in the notebook, and local tests do not change it.
+`tutorials/DIMER_Document_Type_Classification_RVL_CDIP_Workshop.ipynb` remains **Candidate** under DIMER Notebook Specification 2.2. Its default path has one successful hosted execution (Google Colab T4, 2026-09-26, recorded below) on notebook blob `56fb04d9`. The 2026-09-28 review fixes (below) change code cells. The fixed revision (commit `6d2e708`, notebook blob `4b1e9295`) has one successful hosted default-path execution (Google Colab T4, 2026-09-28, recorded below) with outputs identical to the 2026-09-26 run. BYOD and `RUN_ROBUSTNESS=False` have no hosted execution on this revision. The bring-your-own-pages branch (REL12) has no hosted execution yet. Checkpoint redistribution remains `pending-review`, as declared in the notebook, and local tests do not change it.
 
 ## Verification coverage (automatic versus manual)
 
@@ -108,3 +108,37 @@ Synthetic pages and model doubles establish control flow, displays and exports o
 4. The observed learner walkthrough that the review lists; it is outside what this repository can record automatically.
 
 Status stays **Candidate**; redistribution stays `pending-review`.
+
+### Maintainer-supplied Colab execution of revision `6d2e708` — 2026-09-28
+
+The maintainer supplied the [executed notebook](execution-evidence/2026-09-28/DIMER_Document_Type_Classification_RVL_CDIP_Workshop_6d2e708.ipynb), archived byte for byte, SHA-256 `3381b0e41c3887538f7a946629e00d7f22faac40fa986746f4595938cf4eba19`. Saved outputs were inspected; execution was not independently repeated.
+
+- **Source match.** All 48 cells have the same IDs, order and source as notebook blob `4b1e9295` at commit `6d2e708`, with no differences at all: no `# @param` toggle was changed and Colab inserted no `# @title` lines.
+- **Execution.** The 19 code cells have execution counts 1..19 in order and no saved errors. Runtime freedom from manual restarts is not established by the artifact.
+- **Runtime.** Google Colab, Tesla T4 (15.6 GB), Python 3.13.15, torch 2.14.0+cu130, torchvision 0.29.0+cu130, Transformers 4.57.6, datasets 4.1.1, huggingface_hub 0.36.2, NumPy 2.1.3, Pillow 11.3.0. The install cell installed the torch, torchvision, Transformers, huggingface-hub and datasets pins in-kernel and continued without a restart. Peak GPU memory during sample inference: 498,254,848 bytes. Warnings: `HF_TOKEN` secret not available (anonymous Hub access), slow image processor, ignored `reduce_labels` argument.
+- **Settings.** Defaults: `RUN_ROBUSTNESS=True`, `USE_BYOD=False`, `RUN_SELECTIVE_CLASSIFICATION=False`.
+
+Results (sample-sanity measures on the built-in data, not general model rankings):
+
+| Measure | 2026-09-26 (blob `56fb04d9`) | 2026-09-28 (blob `4b1e9295`) |
+|---|---:|---:|
+| Accuracy | 0.9531 | 0.9531 |
+| Macro F1 | 0.9530 | 0.9530 |
+| Top-3 accuracy | 0.9938 | 0.9938 |
+| Pages with a tied top-1 score | not reported | 0 |
+| Conversion parity, max abs logit difference | 0.0 | 0.0 |
+| Robustness accuracy: original / rotate90 / rotate180 / low resolution / centre crop | 0.812 / 0.500 / 0.688 / 0.750 / 0.812 | 0.812 / 0.500 / 0.688 / 0.750 / 0.812 |
+
+Checkpoint SHA-256 (`1b7a9016…`), converted SafeTensors SHA-256 (`b9484ea5…`), dataset revision `25b73ea8482e805ef40750464959e910e4579921`, sample digest, confusion matrix, strongest confusions, high-confidence-error and lowest-margin lists, robustness pages and terminal summary are text-identical to the 2026-09-26 run once timings are removed. With no tied top-1 scores in this sample, the tie rule does not change any recorded result, as expected.
+
+| Journey | Verdict |
+|---|---|
+| Default Run all (fresh T4) | **Pass.** Completes to the terminal summary; metrics and model outputs identical to the previous hosted run. |
+| DIT-M01 learner view | **Pass.** The one-page-per-class preview, per-class table (weakest recall: scientific report and presentation, 0.850), changed-page table (9 changed rows) with the `rvl-derived-test-0319` rotate90 before/after pair, class gallery and error gallery all render in the saved outputs; captions show full class names. |
+| DIT-M02 tie rule | **Pass**, no ties present (`pages_with_tied_top1_score` = 0). |
+| DIT-m03 dataset acquisition | **Pass.** The dataset loaded at the full pinned commit without the Hub API head check. |
+| DIT-m04 export inventory | **Pass.** The export cell lists exactly the ten files written by this run. The stale-gallery removal path is not exercised (the sample has errors). |
+| BYOD (DIT-M01/M02/M03, m01, m02) | Not assessed in this run (`USE_BYOD=False`). |
+| `RUN_ROBUSTNESS=False` | Not assessed in this run. |
+
+Still open: a hosted BYOD run with the real model (REL12), including the expected rejections of a multi-page TIFF and a malformed labels CSV; a hosted `RUN_ROBUSTNESS=False` run; the observed learner walkthrough. Status remains **Candidate**; `clean_runtime_evidence` and redistribution status are unchanged.
