@@ -104,7 +104,7 @@ The notebook also reports two baselines: the random-guess expectation (1/16 = 0.
 
 ###### Decision thresholds
 
-The pipeline's decision rule is `argmax(logits)` (`DECISION_RULE`). This is an implicit threshold: the class with the highest score is predicted, however low that score is. No acceptance threshold, minimum score or reject option is applied, and none was set during development.
+The pipeline's decision rule is `argmax(logits)` (`DECISION_RULE`); equal logits resolve to the lower class ID, and `top_k` uses the same order. This is an implicit threshold: the class with the highest score is predicted, however low that score is. No acceptance threshold, minimum score or reject option is applied, and none was set during development.
 
 Thresholds are deliberately not shipped, because the cost of a misrouted page depends on the downstream step and the 16 scores are not calibrated. The deploying operator owns any threshold. The notebook's optional selective-classification experiment (`RUN_SELECTIVE_CLASSIFICATION`, off by default) shows the trade-off between the fraction of pages kept and their accuracy at margin thresholds from 0.0 to 0.50. An operator should set a margin or score threshold on their own labelled validation pages. Where a wrongly routed page is costly, for example a legal notice filed as an advertisement, choose a threshold that sends more pages to human review. Where review is costly and misrouting is cheap, a lower threshold is appropriate.
 
@@ -184,7 +184,7 @@ The following uses are unacceptable even where the model would work:
 | Input | one `PIL.Image.Image` or a sequence of 1–64; converted to RGB |
 | Image size | 32–4096 pixels per side; at most 32,000,000 pixels |
 | Preprocessing | pinned `AutoImageProcessor` (224×224, mean/std 0.5) |
-| `predicted_class_id`, `predicted_label` | `argmax(logits)` over the fixed 16 classes |
+| `predicted_class_id`, `predicted_label` | `argmax(logits)` over the fixed 16 classes; ties go to the lower class ID |
 | `top_k` | ranked `{class_id, label, score}` entries; `top_k` in 1–16, default 3 |
 | `class_scores` | 16 softmax scores in the canonical class order; not calibrated |
 | `decision_rule`, `model_id`, `model_revision`, `device` | returned with every prediction batch |
