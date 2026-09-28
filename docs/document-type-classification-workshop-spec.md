@@ -235,6 +235,7 @@ The decision rule is:
 
 ```text
 predicted class = argmax(logits)
+ties: equal scores rank the lower class ID first (top-1, top-k, ranks and every export)
 ```
 
 The exported class scores are:

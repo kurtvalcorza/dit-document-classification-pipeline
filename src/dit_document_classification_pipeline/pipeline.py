@@ -51,7 +51,7 @@ MAX_IMAGE_SIDE = 4096
 MAX_PIXELS = 32_000_000
 MAX_BATCH = 64
 DEFAULT_TOP_K = 3
-DECISION_RULE = "argmax(logits)"
+DECISION_RULE = "argmax(logits); equal logits rank the lower class ID first (top-1 and top-k)"
 
 INPUT_SCHEMA: dict[str, Any] = {
     "input": "one PIL document-page image or a sequence of them; converted to RGB",
@@ -226,6 +226,19 @@ def validate_dataset(records: Sequence[Mapping[str, Any]], *, require_labels: bo
     }
 
 
+def rank_classes(values: Any) -> np.ndarray:
+    """Return class IDs per row in decision order: highest value first, lower class ID on ties.
+
+    Column 0 equals ``np.argmax``. ``np.argsort`` is not stable by default, so equal values
+    could otherwise come back in either order depending on the NumPy build.
+    """
+    matrix = np.atleast_2d(np.asarray(values))
+    if matrix.ndim != 2 or matrix.shape[1] == 0:
+        raise ValueError("rank_classes expects a non-empty 1-D row or 2-D matrix of class values")
+    class_ids = np.arange(matrix.shape[1])
+    return np.stack([np.lexsort((class_ids, -row)) for row in matrix])
+
+
 def classification_metrics(
     truth: Sequence[int], predicted: Sequence[int], top3: Sequence[Sequence[int]] | None = None
 ) -> dict[str, Any]:
@@ -324,9 +337,11 @@ class DiTDocumentClassificationPipeline:
         with torch.inference_mode():
             logits = self.model(**encoded).logits
             scores = torch.softmax(logits, dim=-1).cpu().numpy()
+        # Rank on the logits themselves (the decision rule); softmax is monotone, so the
+        # order is also non-increasing in score, but float rounding cannot create new ties.
+        orders = rank_classes(logits.float().cpu().numpy())
         predictions = []
-        for row in scores:
-            order = np.argsort(-row)
+        for row, order in zip(scores, orders, strict=True):
             best = int(order[0])
             predictions.append(
                 {

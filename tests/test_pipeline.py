@@ -1,6 +1,7 @@
 import hashlib
 import json
 
+import numpy as np
 import pytest
 from PIL import Image
 
@@ -16,6 +17,7 @@ from dit_document_classification_pipeline import (
     SOURCE_SHA256,
     DiTDocumentClassificationPipeline,
     classification_metrics,
+    rank_classes,
     validate_dataset,
     validate_inputs,
     verify_snapshot,
@@ -154,3 +156,43 @@ def test_dataset_and_evaluator_reject_image_batches(container):
     pipeline = DiTDocumentClassificationPipeline.__new__(DiTDocumentClassificationPipeline)
     with pytest.raises(TypeError, match="single PIL"):
         pipeline.evaluate(records)
+
+
+@pytest.mark.parametrize(
+    ("row", "expected"),
+    [
+        # unique maximum
+        ([0.1, 0.7, 0.2], [1, 2, 0]),
+        # two-way top-1 tie: the lower class ID leads, matching np.argmax
+        ([0.1, 0.4, 0.1, 0.4], [1, 3, 0, 2]),
+        # all equal: plain class order
+        ([0.25, 0.25, 0.25, 0.25], [0, 1, 2, 3]),
+        # tie at rank three: exactly one of classes 0 and 4 enters the top 3, the lower ID
+        ([0.2, 0.3, 0.05, 0.25, 0.2], [1, 3, 0, 4, 2]),
+    ],
+)
+def test_rank_classes_tie_rule(row, expected):
+    order = rank_classes(np.asarray(row, dtype=np.float32))[0]
+    assert order.tolist() == expected
+    assert int(order[0]) == int(np.argmax(row))
+    assert order[:3].tolist() == expected[:3]
+
+
+def test_rank_classes_sixteen_class_ties_every_pair():
+    # Every tied pair among 16 classes, as float32 softmax-like rows.
+    for i in range(16):
+        for j in range(i + 1, 16):
+            row = np.arange(16, dtype=np.float32) / 1000
+            row[[i, j]] = 1.0
+            row /= row.sum()
+            order = rank_classes(row)[0]
+            assert order[:2].tolist() == [i, j]
+            assert int(order[0]) == int(np.argmax(row))
+            assert sorted(order.tolist()) == list(range(16))
+
+
+def test_rank_classes_rows_are_independent_and_input_checked():
+    matrix = np.array([[1.0, 1.0, 0.0], [0.0, 2.0, 2.0]])
+    assert rank_classes(matrix).tolist() == [[0, 1, 2], [1, 2, 0]]
+    with pytest.raises(ValueError):
+        rank_classes(np.zeros((1, 0)))
