@@ -2,7 +2,7 @@
 
 ## Current decision
 
-`tutorials/DIMER_Document_Type_Classification_RVL_CDIP_Workshop.ipynb` remains **Candidate** under DIMER Notebook Specification 2.2. Its default path has one successful hosted execution (Google Colab T4, 2026-09-26, recorded below) on notebook blob `56fb04d9`. The 2026-09-28 review fixes (below) change code cells. The fixed revision (commit `6d2e708`, notebook blob `4b1e9295`) has one successful hosted default-path execution (Google Colab T4, 2026-09-28, recorded below) with outputs identical to the 2026-09-26 run. BYOD and `RUN_ROBUSTNESS=False` have no hosted execution on this revision. The bring-your-own-pages branch (REL12) has no hosted execution yet. Checkpoint redistribution remains `pending-review`, as declared in the notebook, and local tests do not change it.
+`tutorials/DIMER_Document_Type_Classification_RVL_CDIP_Workshop.ipynb` remains **Candidate** under DIMER Notebook Specification 2.2. Its default path has one successful hosted execution (Google Colab T4, 2026-09-26, recorded below) on notebook blob `56fb04d9`. The 2026-09-28 review fixes (below) change code cells. The fixed revision (commit `6d2e708`, notebook blob `4b1e9295`) has one successful hosted default-path execution (Google Colab T4, 2026-09-28, recorded below) with outputs identical to the 2026-09-26 run. BYOD and `RUN_ROBUSTNESS=False` have no hosted execution on this revision. The bring-your-own-pages branch (REL12) has no hosted execution yet. Checkpoint redistribution remains `pending-review`, as declared in the notebook, and local tests do not change it. The 2026-10-03 uv isolated environment change (below) produces notebook blob `41fb7b1a`, which has no hosted execution yet.
 
 ## Verification coverage (automatic versus manual)
 
@@ -142,3 +142,13 @@ Checkpoint SHA-256 (`1b7a9016…`), converted SafeTensors SHA-256 (`b9484ea5…`
 | `RUN_ROBUSTNESS=False` | Not assessed in this run. |
 
 Still open: a hosted BYOD run with the real model (REL12), including the expected rejections of a multi-page TIFF and a malformed labels CSV; a hosted `RUN_ROBUSTNESS=False` run; the observed learner walkthrough. Status remains **Candidate**; `clean_runtime_evidence` and redistribution status are unchanged.
+
+## 2026-10-03 uv isolated environment
+
+Notebook blob `4b1e9295` (commit `fc43c65`) → `41fb7b1a`. Hosted re-run pending; status stays **Candidate**.
+
+- The in-kernel `pip install` and its NumPy workaround are removed. Section 4 downloads a pinned `uv` 0.12.15 wheel (size and SHA-256 checked), builds a CPython 3.12.12 environment with `uv venv --managed-python`, and installs `tools/document-classification-workshop-requirements.lock` with `--require-hashes --only-binary :all:`. Run all needs no restart.
+- Download, conversion and parity, dataset loading, sampling, model loading, inference and the robustness transforms run as subprocess stages of the carried file `tools/document_classification_workshop.py` on the environment's Python. Cell `uvcarrier` carries that file and the lock byte for byte and checks their SHA-256; `tools/build_document_classification_workshop_carrier.py --check` keeps it in step with `tools/`. Metrics, tables, galleries, BYOD validation and exports stay in the kernel and need only NumPy and Pillow.
+- Pins are unchanged: torch 2.14.0, torchvision 0.29.0, torchaudio 2.11.0, Transformers 4.57.6, safetensors 0.8.0, NumPy 2.1.3, Pillow 11.3.0, huggingface-hub 0.36.2, datasets 4.1.1. The model now runs on CPython 3.12.12; the 2026-09-28 hosted run used the kernel's Python 3.13.15.
+- **Linux x86_64 only** (Google Colab, Kaggle, Linux Jupyter). The runtime cell stops on Windows and macOS.
+- Offline verification (not clean-runtime evidence): pytest, `ruff check src tests tools`, `tools/validate_release_assets.py` and the carrier `--check`, with model doubles. No real-model run: the environment is Linux x86_64 only. The default results to reproduce are the 2026-09-28 run of blob `4b1e9295` above (accuracy 0.9531, macro F1 0.9530, top-3 0.9938).

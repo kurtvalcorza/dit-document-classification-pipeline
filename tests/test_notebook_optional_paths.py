@@ -13,8 +13,9 @@ from pathlib import Path
 
 import numpy as np
 import pytest
-from packaging.version import InvalidVersion, Version
 from PIL import Image, ImageDraw
+
+import document_classification_workshop as stages
 
 ROOT = Path(__file__).resolve().parents[1]
 NOTEBOOK = ROOT / 'tutorials/DIMER_Document_Type_Classification_RVL_CDIP_Workshop.ipynb'
@@ -57,13 +58,14 @@ def namespace(tmp_path, monkeypatch, vector=None):
               BATCH_SIZE=16, USE_BYOD=False, RUN_ROBUSTNESS=True, BYOD_LABELS_PATH='',
               OUTPUT_DIR=str(tmp_path/'outputs'), MODEL_ID='test-double',
               MODEL_REVISION='fixed-test-revision', converted_sha256='test-conversion',
-              RUNTIME={'model_double': True}, batched_predict=predict)
-    helpers(9, {'sha256_file'}, ns)
+              RUNTIME={'model_double': True}, batched_predict=predict,
+              show_source=lambda *names: None)
+    helpers('3eaee889', {'sha256_file'}, ns)
     helpers('18aafd5c', {'make_gallery'}, ns)
     helpers('b485b2eb', {'rank_classes'}, ns)
-    helpers(23, {'confusion_matrix_np', 'per_class_metrics_from_cm'}, ns)
-    helpers(37, {'write_csv'}, ns)
-    exec(cell(39), ns)
+    helpers('e3dd9263', {'confusion_matrix_np', 'per_class_metrics_from_cm'}, ns)
+    helpers('8be87936', {'write_csv'}, ns)
+    exec(cell('907b911c'), ns)
     return ns, calls
 
 
@@ -85,22 +87,21 @@ def archive(path, members):
     ('2.14.0.post1', False), ('2.14.1', False), (None, False), ('invalid', False),
 ])
 def test_runtime_public_version(observed, expected):
-    ns = dict(Version=Version, InvalidVersion=InvalidVersion)
-    helpers(7, {'matches_public_version'}, ns)
-    assert ns['matches_public_version'](observed, '2.14.0') is expected
+    # The pin check moved from the removed in-kernel install cell to the isolated environment's stage file.
+    assert stages.matches_public_version(observed, '2.14.0') is expected
 
 
 def test_robustness_gate_and_header_only_export(tmp_path, monkeypatch):
     ns, calls = namespace(tmp_path, monkeypatch)
     ns.update(RUN_ROBUSTNESS=False, robustness_base=object())
-    exec(cell(31), ns)
+    exec(cell('3891d68d'), ns)
     assert calls == [] and ns['robustness_rows'] == [] and ns['robustness_summary'] == {}
     out = tmp_path/'robustness.csv'
     ns['write_csv'](out, ns['robustness_rows'], ['image_id', 'variant'])
     assert out.read_text().strip() == 'image_id,variant'
     ns.update(RUN_ROBUSTNESS=True, robustness_base=[
         {'image_id': 'page.png', 'image': Image.new('RGB', (40, 48)), 'label': 'letter', 'label_id': 0}])
-    exec(cell(31), ns)
+    exec(cell('3891d68d'), ns)
     assert calls == [5] and len(ns['robustness_rows']) == 5
     assert ns['robustness_summary']['original']['accuracy'] == 1.0
 
@@ -129,7 +130,7 @@ def test_byod_full_optional_flow_exports_unique_ids(tmp_path, monkeypatch, label
         labels = tmp_path/'labels.csv'
         labels.write_text('filename,label\npage.png,letter\npage.jpg,form\n')
         ns['BYOD_LABELS_PATH'] = str(labels)
-    exec(cell(39), ns)
+    exec(cell('907b911c'), ns)
     result = json.loads((tmp_path/'outputs/byod_results.json').read_text())
     assert result['evaluation_verdict'] == ('measured' if labelled else 'not-measurable')
     assert set(result['provenance']['image_sha256']) == {'page.png', 'page.jpg'}
@@ -155,7 +156,7 @@ def test_invalid_labels_fail_before_inference(tmp_path, monkeypatch, rows, messa
     labels.write_text('filename,label\n'+rows)
     ns.update(USE_BYOD=True, BYOD_PATH=str(image), BYOD_LABELS_PATH=str(labels))
     with pytest.raises(ValueError, match=message):
-        exec(cell(39), ns)
+        exec(cell('907b911c'), ns)
     assert calls == [] and not (tmp_path/'outputs').exists()
 
 
@@ -188,6 +189,8 @@ def test_notebook_rank_classes_tie_rule(row, expected):
 def test_ranking_is_shared_by_every_code_cell():
     for cid, source in notebook_code():
         assert 'argsort(' not in source and '.argmax(' not in source, cid
+    stage_file = (ROOT / 'tools' / 'document_classification_workshop.py').read_text(encoding='utf-8')
+    assert 'argsort(' not in stage_file and '.argmax(' not in stage_file
 
 
 @pytest.mark.parametrize('gold', ['email', 'handwritten'])
@@ -356,14 +359,47 @@ def test_galleries_displayed_and_stale_error_gallery_removed(tmp_path, monkeypat
     assert (tmp_path/'outputs/galleries/class_gallery.png').is_file()
 
 
+class FakeSplit(list):
+    """A list of dataset rows that also answers split['label'] like a datasets.Dataset."""
+
+    def __getitem__(self, key):
+        if key == 'label':
+            return [row['label'] for row in self]
+        return list.__getitem__(self, key)
+
+
 def test_sample_preview_displayed_before_classification(tmp_path, monkeypatch):
+    # The isolated environment selects and digests the pages; the kernel reloads, re-checks and previews them.
     ns, _calls = namespace(tmp_path, monkeypatch)
-    dataset = [{'image': Image.new('RGB', (40, 48), (i % 256, i // 256, 7)), 'label': i % 16}
-               for i in range(16 * 21)]
-    ns.update(dataset_test=dataset, SAMPLE_SEED=42, SAMPLE_PER_CLASS=20)
+    dataset = FakeSplit({'image': Image.new('RGB', (40, 48), (i % 256, i // 256, 7)), 'label': i % 16}
+                        for i in range(16 * 21))
+    monkeypatch.setattr(stages, 'CONFIG', {'sample_seed': 42, 'sample_per_class': 20, 'min_image_side': 32,
+                                           'max_image_side': 4096, 'max_pixels': 32_000_000})
+    sample = stages.build_sample(dataset, tmp_path/'pages')
+    stage_calls = []
+    ns.update(DATASET_ID='fake', DATASET_REVISION='0' * 40, Counter=__import__('collections').Counter,
+              run_stage=lambda stage, *a, **k: stage_calls.append(stage), state=lambda name: sample)
     exec(cell('18aafd5c'), ns)
+    assert stage_calls == ['sample']
     assert len(ns['sample_records']) == 320 and len(ns['shown']) == 1
     assert [r['label_id'] for r in ns['preview_records']] == list(range(16))
+    assert ns['sample_digest'] == sample['sample_digest']
+    first = ns['sample_records'][0]
+    assert first['image'].tobytes() == dataset[first['source_row_index']]['image'].tobytes()
+
+
+def test_kernel_refuses_a_page_changed_after_sampling(tmp_path, monkeypatch):
+    ns, _calls = namespace(tmp_path, monkeypatch)
+    dataset = FakeSplit({'image': Image.new('RGB', (40, 48), (i % 256, i // 256, 7)), 'label': i % 16}
+                        for i in range(16 * 20))
+    monkeypatch.setattr(stages, 'CONFIG', {'sample_seed': 42, 'sample_per_class': 20, 'min_image_side': 32,
+                                           'max_image_side': 4096, 'max_pixels': 32_000_000})
+    sample = stages.build_sample(dataset, tmp_path/'pages')
+    Image.new('RGB', (40, 48), 'red').save(sample['records'][5]['png'])
+    ns.update(DATASET_ID='fake', DATASET_REVISION='0' * 40, run_stage=lambda *a, **k: None,
+              state=lambda name: sample)
+    with pytest.raises(RuntimeError, match='changed after sampling'):
+        exec(cell('18aafd5c'), ns)
 
 
 def test_provenance_and_conclusion_wording_match_evidence_boundary():
