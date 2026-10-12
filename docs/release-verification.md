@@ -2,7 +2,7 @@
 
 ## Current decision
 
-`tutorials/DIMER_Document_Type_Classification_RVL_CDIP_Workshop.ipynb` remains **Candidate** under DIMER Notebook Specification 2.2. Its default path has one successful hosted execution (Google Colab T4, 2026-09-26, recorded below) on notebook blob `56fb04d9`. The 2026-09-28 review fixes (below) change code cells. The fixed revision (commit `6d2e708`, notebook blob `4b1e9295`) has one successful hosted default-path execution (Google Colab T4, 2026-09-28, recorded below) with outputs identical to the 2026-09-26 run. BYOD and `RUN_ROBUSTNESS=False` have no hosted execution on this revision. The bring-your-own-pages branch (REL12) has no hosted execution yet. Checkpoint redistribution remains `pending-review`, as declared in the notebook, and local tests do not change it. The 2026-10-03 uv isolated environment change (below) produces notebook blob `41fb7b1a` (commit `8ef7fae`), which has one successful hosted default-path execution (Colab CLI sequential execution on a fresh Colab Tesla T4, 2026-10-03, recorded below) with metrics, digests and figures identical to the 2026-09-28 run. The 2026-10-13 review fixes (review round 2026-10-12, below) produce notebook blob `1a5f1514`, and the peer-review follow-up (below) blob `d20171b1`; neither has a hosted execution yet.
+`tutorials/DIMER_Document_Type_Classification_RVL_CDIP_Workshop.ipynb` remains **Candidate** under DIMER Notebook Specification 2.2. Its default path has one successful hosted execution (Google Colab T4, 2026-09-26, recorded below) on notebook blob `56fb04d9`. The 2026-09-28 review fixes (below) change code cells. The fixed revision (commit `6d2e708`, notebook blob `4b1e9295`) has one successful hosted default-path execution (Google Colab T4, 2026-09-28, recorded below) with outputs identical to the 2026-09-26 run. BYOD and `RUN_ROBUSTNESS=False` have no hosted execution on this revision. The bring-your-own-pages branch (REL12) has no hosted execution yet. Checkpoint redistribution remains `pending-review`, as declared in the notebook, and local tests do not change it. The 2026-10-03 uv isolated environment change (below) produces notebook blob `41fb7b1a` (commit `8ef7fae`), which has one successful hosted default-path execution (Colab CLI sequential execution on a fresh Colab Tesla T4, 2026-10-03, recorded below) with metrics, digests and figures identical to the 2026-09-28 run. The 2026-10-13 review fixes (review round 2026-10-12, below) produce notebook blob `1a5f1514`, and the peer-review follow-up (below) blob `d20171b1` (commit `00739be`). Blob `d20171b1` has one successful hosted default-path execution (Colab CLI sequential execution on a fresh Colab Tesla T4, 2026-10-12, recorded below) with every existing metric, count and digest equal to the 2026-10-03 run; blob `1a5f1514` was not run on its own.
 
 ## Verification coverage (automatic versus manual)
 
@@ -186,6 +186,7 @@ Output comparison with the 2026-09-28 run (difflib on normalised text outputs, p
 | Date | Commit | Notebook blob | Executor | Path | Result | Evidence |
 |---|---|---|---|---|---|---|
 | 2026-10-03 | `8ef7fae` | `41fb7b1a` | Colab CLI 0.7.4, fresh Colab Tesla T4 | default only, CLI sequential execution (not a browser Run all) | PASS, 20/20 cells; metrics equal to 2026-09-28 | [notebook](execution-evidence/2026-10-03/DIMER_Document_Type_Classification_RVL_CDIP_Workshop_8ef7fae_colab-cli-t4.ipynb) |
+| 2026-10-12 | `00739be` | `d20171b1` | Colab CLI 0.7.4, fresh Colab Tesla T4 | default only, CLI sequential execution (not a browser Run all) | PASS, 20/20 cells; existing metrics equal to 2026-10-03 | [notebook](execution-evidence/2026-10-12/DIMER_Document_Type_Classification_RVL_CDIP_Workshop_00739be_colab-cli-t4.ipynb) |
 
 Still open: a hosted BYOD run with the real model (REL12), a hosted `RUN_ROBUSTNESS=False` run, and the observed learner walkthrough. Status remains **Candidate**; redistribution stays `pending-review`.
 
@@ -233,3 +234,39 @@ A second review of the PR head (`48a31d9`, notebook blob `1a5f1514`) questioned 
 Offline verification (not clean-runtime evidence): ruff, the carrier `--check` and the validator pass; pytest 135 passed (128 before this follow-up). The wording tests are labelled as wording checks. The 11 new or revised tests fail on `48a31d9`. The review's acceptance checks are unchanged from the previous head (DIT2-M1 and m1–m5 pass; DIT2-m6 fails only on its 2.5 criterion).
 
 Remaining before promotion: a hosted default-path run of blob `d20171b1` (REL14), a browser BYOD run with one accepted and one refused input (REL12), and a hosted `RUN_ROBUSTNESS=False` run. Status remains **Candidate**.
+
+### Colab CLI execution of revision `00739be` — 2026-10-12
+
+[Executed notebook](execution-evidence/2026-10-12/DIMER_Document_Type_Classification_RVL_CDIP_Workshop_00739be_colab-cli-t4.ipynb), archived byte for byte, SHA-256 `19bba9066ee0736e768b696ba79547227dfb9e04d90db389b96812773a9eef47`.
+
+- **Executor.** Colab CLI 0.7.4, fresh Colab Tesla T4 (session `suite-dit-00739be-d823`, created for this run and stopped afterwards; started 2026-10-12 21:09 UTC, finished 21:13 UTC). The notebook was fetched at the full commit SHA `00739beba93cbaf0d24b207f5cbe3dd77908bff8` and its git blob `d20171b192b6c4fbb086eaba34e0ed868291e5fb` checked before the VM was allocated.
+- **Evidence boundary.** CLI sequential execution of the code cells in one kernel, not a browser Run all: forms were not rendered, no upload or download dialog was answered, and only the default path ran. The CLI does not set execution counts; order is evidenced by its `Executing cell k/20` log lines.
+- **Source match.** All 50 cells have the same IDs, order and source as blob `d20171b1`.
+- **Execution.** 20/20 code cells executed in order in one pass, no error outputs, no restart. Wall time 239.1 s including session start and stop.
+- **Runtime.** Isolated environment: CPython 3.12.12, torch 2.14.0+cu130, torchvision 0.29.0+cu130, Transformers 4.57.6, datasets 4.1.1, huggingface_hub 0.36.2, NumPy 2.1.3, Pillow 11.3.0, Tesla T4 (15,637,086,208 bytes). Kernel: Python 3.13.15, NumPy 2.1.3, Pillow 11.3.0. Peak GPU memory during sample inference: 498,254,848 bytes (unchanged). Warnings: the slow-image-processor notice and the `reduce_labels` `UserWarning`, both explained in Section 6.
+- **Settings.** Defaults: `RUN_ROBUSTNESS=True`, `USE_BYOD=False`, `RUN_SELECTIVE_CLASSIFICATION=False`.
+
+Comparison with the 2026-10-03 run of blob `41fb7b1a` (normalised printed output, line by line). Every existing number is equal:
+
+| Measure | 2026-10-03 (blob `41fb7b1a`) | 2026-10-12 (blob `d20171b1`) |
+|---|---:|---:|
+| Accuracy | 0.953125 (305/320) | 0.953125 (305/320) |
+| Macro F1 | 0.9530115891276032 | 0.9530115891276032 |
+| Top-3 accuracy | 0.99375 (318/320) | 0.99375 (318/320) |
+| Pages with a tied top-1 score | 0 | 0 |
+| Sample digest | `4ca6881427c4…` | `4ca6881427c4…` |
+| Conversion parity, max abs logit difference | 0.0 | 0.0 |
+| Per-class table, confusion pairs and counts | — | identical |
+| Robustness accuracy: original / rotate90 / rotate180 / low resolution / centre crop | 0.812 / 0.500 / 0.688 / 0.750 / 0.812 | 0.812 / 0.500 / 0.688 / 0.750 / 0.812 |
+| Robustness stability | 1.000 / 0.625 / 0.875 / 0.938 / 1.000 | 1.000 / 0.625 / 0.875 / 0.938 / 1.000 |
+
+The only differing printed lines are the changes this PR makes: the `dataset`, `sample` and `predict` stages print one labelled line (the dataset line confirms that the label names match the class order, 62 test rows per class); the new reference values (random top-3 0.1875, majority macro F1 0.00735); confusion pairs printed as `k of 20 pages`; the robustness table with `correct/16`, `unchanged/16` and probe-kind columns, the three probe pages already wrong at baseline and the paired-outcome table (rotate90 5 correct→wrong, 1 wrong→other wrong; rotate180 2 correct→wrong; low resolution 1 correct→wrong; centre crop none); the before/after example `rvl-derived-test-0141` (advertisement, original prediction correct) instead of `0319`, as the new selection rule specifies; and the counts-first terminal summary at three decimals. Model load and forward timings differ (0.55 s vs 0.62 s; 2.86 s vs 3.09 s), as expected between runtimes. The BYOD refusal handler was not exercised (`USE_BYOD=False`).
+
+| Journey | Verdict |
+|---|---|
+| Default path (fresh T4, CLI sequential execution) | **Pass.** Completes to the terminal summary; every existing metric, count and digest equals the 2026-10-03 run; the PR's additive outputs render. |
+| BYOD (accepted and refused input) | Not assessed (CLI): `USE_BYOD=False`, and the CLI cannot answer an upload. |
+| `RUN_ROBUSTNESS=False` | Not assessed (CLI). |
+| Browser Run all, forms and galleries as rendered in a browser | Not assessed (CLI). |
+
+Status remains **Candidate**. Still open: a browser BYOD run with one accepted and one refused input (REL12) and a hosted `RUN_ROBUSTNESS=False` run.
