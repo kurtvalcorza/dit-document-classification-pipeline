@@ -2,7 +2,7 @@
 
 ## Current decision
 
-`tutorials/DIMER_Document_Type_Classification_RVL_CDIP_Workshop.ipynb` remains **Candidate** under DIMER Notebook Specification 2.2. Its default path has one successful hosted execution (Google Colab T4, 2026-09-26, recorded below) on notebook blob `56fb04d9`. The 2026-09-28 review fixes (below) change code cells. The fixed revision (commit `6d2e708`, notebook blob `4b1e9295`) has one successful hosted default-path execution (Google Colab T4, 2026-09-28, recorded below) with outputs identical to the 2026-09-26 run. BYOD and `RUN_ROBUSTNESS=False` have no hosted execution on this revision. The bring-your-own-pages branch (REL12) has no hosted execution yet. Checkpoint redistribution remains `pending-review`, as declared in the notebook, and local tests do not change it. The 2026-10-03 uv isolated environment change (below) produces notebook blob `41fb7b1a` (commit `8ef7fae`), which has one successful hosted default-path execution (Colab CLI sequential execution on a fresh Colab Tesla T4, 2026-10-03, recorded below) with metrics, digests and figures identical to the 2026-09-28 run. The 2026-10-13 review fixes (review round 2026-10-12, below) produce notebook blob `1a5f1514`, which has no hosted execution yet.
+`tutorials/DIMER_Document_Type_Classification_RVL_CDIP_Workshop.ipynb` remains **Candidate** under DIMER Notebook Specification 2.2. Its default path has one successful hosted execution (Google Colab T4, 2026-09-26, recorded below) on notebook blob `56fb04d9`. The 2026-09-28 review fixes (below) change code cells. The fixed revision (commit `6d2e708`, notebook blob `4b1e9295`) has one successful hosted default-path execution (Google Colab T4, 2026-09-28, recorded below) with outputs identical to the 2026-09-26 run. BYOD and `RUN_ROBUSTNESS=False` have no hosted execution on this revision. The bring-your-own-pages branch (REL12) has no hosted execution yet. Checkpoint redistribution remains `pending-review`, as declared in the notebook, and local tests do not change it. The 2026-10-03 uv isolated environment change (below) produces notebook blob `41fb7b1a` (commit `8ef7fae`), which has one successful hosted default-path execution (Colab CLI sequential execution on a fresh Colab Tesla T4, 2026-10-03, recorded below) with metrics, digests and figures identical to the 2026-09-28 run. The 2026-10-13 review fixes (review round 2026-10-12, below) produce notebook blob `1a5f1514`, and the peer-review follow-up (below) blob `d20171b1`; neither has a hosted execution yet.
 
 ## Verification coverage (automatic versus manual)
 
@@ -209,6 +209,27 @@ CI's dependency budget (NumPy 2.5.3, Pillow 11.3.0, packaging, pytest 8.4.2, ruf
 
 ### Remaining before promotion
 
-- A hosted default-path run of blob `1a5f1514` (REL14). Default metrics are expected to equal the 2026-10-03 run, because no metric-computing code changed.
+- A hosted default-path run of the final blob (`d20171b1` after the follow-up below; REL14). Default metrics are expected to equal the 2026-10-03 run, because no metric-computing code changed.
 - A browser BYOD run with one accepted and one refused input (REL12), and a hosted `RUN_ROBUSTNESS=False` run.
 - Status remains **Candidate**; redistribution stays `pending-review`.
+
+### Peer-review follow-up (CX1–CX10) — 2026-10-13
+
+A second review of the PR head (`48a31d9`, notebook blob `1a5f1514`) questioned how the guidance interprets the measurements; the calculations were not disputed. This follow-up produces notebook blob `d20171b1`. No existing computed number changes; the additions are displays, export fields and text.
+
+| Item | Change | Cells / files |
+|---|---|---|
+| CX1 training exposure | Section 7 separates parent-corpus membership (IIT-CDIP), unsupervised pre-training exposure (possible, unverified) and supervised fine-tuning exposure (unknown), and says the pages are not shown to be held out from either stage. The provenance limitation no longer says every page overlaps pre-training, and a `training_exposure` object records the three answers. Limitations and the conclusion prompt match. | `bd966b5d`, `8be87936`, `8cf21741`, `guided-03` |
+| CX2 label-noise estimate | Kept as background with its audited population (1,000 pages per class sampled from the RVL-CDIP test split, no confidence interval reported) and the sentence "This estimate cannot be used to correct our accuracy or determine which disagreements are label errors." The ceiling wording is removed; accuracy is read as agreement with the supplied labels. | `601e66d3`, `8be87936`, `8cf21741` |
+| CX3 label-review activity | Tentative visual judgements, not label adjudication; options include "another class may fit" and "cannot determine"; short class descriptions; full-resolution page paths; a statement that reviewing selected disagreements cannot estimate overall label noise. | `1d4d0e0d`, `guided-03` |
+| CX4 crop probe | Center crop is described and labelled as a partial-page probe (about 64% of the area kept, enlarged by preprocessing, label possibly no longer observable), separate from orientation and degradation probes; the table gains a probe-kind column. | `c0ca8456`, `3891d68d` |
+| CX5 paired outcomes | "Shows nothing" replaced by "no change in binary correctness"; a paired-outcome table per variant (correct→wrong, wrong→correct, wrong→other wrong, unchanged) from existing predictions; the before/after pair is labelled as outcome-selected. | `3f050f2d`, `3891d68d` |
+| CX6 reference values | Random top-3 (3/16) and majority macro F1 (1/136) are computed and printed after the existing baseline code, exported under `metrics.json` `reference_values`, and used in the guidance and terminal summary. | `8a55d1c1`, `bbc5b89f`, `772e7bdb`, `8be87936`, `d60ee8bb`, `guided-02`, `11007f70` |
+| CX7 byte digest | `source_bytes_sha256` keeps its name; `sample_manifest_fields` documents that it hashes a PNG re-encoded in RGB when the dataset returns decoded images, and each manifest row gains `rgb_png_sha256`. | `8be87936` |
+| CX8 label mapping | The `dataset` stage checks the dataset's label names against the notebook's class order (it stops on a mismatch) and records them, the full-split per-class counts and whether the image feature decodes; provenance exports them. Only `stage_dataset` changed in the stage file. | `tools/document_classification_workshop.py`, `uvcarrier`, `8be87936` |
+| CX9 selective classification | Called an exploratory selective-classification analysis, not calibration; a threshold picked on these pages needs independent evaluation. | `ae1644b2` |
+| CX10 summaries | The terminal summary leads with counts (`k/320 pages`) and three decimals. | `d60ee8bb` |
+
+Offline verification (not clean-runtime evidence): ruff, the carrier `--check` and the validator pass; pytest 135 passed (128 before this follow-up). The wording tests are labelled as wording checks. The 11 new or revised tests fail on `48a31d9`. The review's acceptance checks are unchanged from the previous head (DIT2-M1 and m1–m5 pass; DIT2-m6 fails only on its 2.5 criterion).
+
+Remaining before promotion: a hosted default-path run of blob `d20171b1` (REL14), a browser BYOD run with one accepted and one refused input (REL12), and a hosted `RUN_ROBUSTNESS=False` run. Status remains **Candidate**.

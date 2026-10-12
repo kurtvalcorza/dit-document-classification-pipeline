@@ -33,21 +33,30 @@ def markdown():
 
 # ---- DIT2-M1: label noise, counts out of 20, error-gallery activity --------------------------------------
 
-def test_confusion_guidance_names_label_noise_counts_and_source():
+# Wording checks: these establish that the guidance is present, not that its interpretation is valid.
+
+def test_wording_confusion_guidance_treats_label_noise_as_background():
     text = cell('601e66d3')
     assert 'out of 20' in text and '1 or 2 pages is an anecdote' in text
-    assert '8.1%' in text and 'quoted from the paper, not measured in this notebook' in text
-    assert 'arXiv:2306.12550' in text and 'Larson, Lim and Leach (2023)' in text
-    assert 'model error, a label error, or a page that fits two classes' in text
+    assert '8.1%' in text and 'arXiv:2306.12550' in text and 'Larson, Lim and Leach (2023)' in text
+    assert '1,000 pages per class (16,000) sampled from the original RVL-CDIP test split' in text
+    assert ('This estimate cannot be used to correct our accuracy or determine which disagreements are label'
+            ' errors.') in text
+    assert 'agreement with the supplied labels' in text and 'cannot decide' in text
+    assert 'within that label-error rate' not in text and 'near or below that figure' not in text
     assert 'out of 20 pages' in cell('52854116')
 
 
-def test_error_gallery_activity_asks_for_a_label_error_judgement():
+def test_wording_label_review_activity_is_tentative_and_has_uncertainty_options():
     text = cell('1d4d0e0d')
-    assert '### Activity: model error, label error, or ambiguous page?' in text
-    assert '**label error**' in text and '<details><summary>Sample answer</summary>' in text
+    assert 'tentative visual judgement, not label adjudication' in text
+    assert '**another class may fit**' in text and '**cannot determine**' in text
+    assert 'cannot estimate the overall label-noise rate' in text
+    assert 'pages/sample/<image_id>.png' in text and 'Short class descriptions' in text
+    assert 'close to what this benchmark can measure' not in markdown()
     conclusion = cell('guided-03')
-    assert 'count out of 20 pages' in conclusion and 'gold labels of those pages looked right' in conclusion
+    assert 'count out of 20 pages' in conclusion and 'as a tentative judgement' in conclusion
+    assert 'cannot determine' in conclusion
 
 
 def test_confusion_pairs_print_their_denominator(capsys):
@@ -130,6 +139,46 @@ def test_granularity_and_baseline_gap_are_explained():
     assert 'one page changes accuracy by 0.0625' in text and 'not the 320-page accuracy' in text
     assert 'whose original prediction was correct' in text
     assert '__/16' in cell('guided-01')
+    # CX5 (wording): no change in binary correctness, not "shows nothing"; the example is outcome-selected.
+    assert 'shows nothing about that transformation' not in text
+    assert 'no change in binary correctness' in text and 'selected by its outcome' in text
+
+
+def test_paired_outcomes_probe_kinds_and_outcome_selected_example(tmp_path, monkeypatch, capsys):
+    # CX4/CX5: paired counts from existing predictions; crop labelled as a partial-page probe (display only).
+    ns = _robustness(tmp_path, monkeypatch, {'page-0'})
+    exec(cell('3891d68d'), ns)
+    out = capsys.readouterr().out
+    assert re.search(r'rotate90\s+3\s+0\s+1\s+0\n', out)       # correct->wrong, wrong->correct, other, same
+    assert re.search(r'center_crop\s+0\s+1\s+0\s+3\n', out)
+    assert re.search(r'rotate180\s+0\s+0\s+0\s+4\n', out)
+    assert re.search(r'center_crop .*partial page', out) and re.search(r'rotate90 .*orientation', out)
+    assert 'about 64% of the page area' in out
+    assert 'selected by its outcome' in out
+    assert ns['robustness_summary']['center_crop']['accuracy'] == 1.0
+
+
+def test_wording_crop_and_selective_classification():
+    text = cell('c0ca8456')
+    assert '64% of the page area' in text and 'label may no longer be observable' in text
+    assert 'Each probe keeps the same ground-truth class' not in text
+    selective = cell('ae1644b2')
+    assert 'exploratory selective-classification analysis' in selective
+    assert 'calibration behavior' not in selective and 'independent' in selective
+
+
+def test_reference_values_for_each_metric(capsys):
+    # CX6: random top-3 is 3/16 and the always-majority macro F1 is 1/136; the existing values do not change.
+    true_ids = np.repeat(np.arange(16), 20)
+    from collections import Counter
+    ns = {'np': np, 'LABELS': LABELS, 'counts': Counter(true_ids.tolist()),
+          'sample_records': [{'label_id': int(i)} for i in true_ids]}
+    exec(cell('bbc5b89f'), ns)
+    assert ns['random_accuracy_expectation'] == 1 / 16 and ns['majority_accuracy'] == 1 / 16
+    assert ns['random_top3_expectation'] == pytest.approx(3 / 16)
+    assert ns['majority_macro_f1'] == pytest.approx(1 / 136)
+    assert "'majority_macro_f1'" in capsys.readouterr().out
+    assert '"reference_values"' in cell('8be87936') and 'random top-3' in cell('d60ee8bb')
 
 
 # ---- DIT2-m3: one refusal line, no traceback, stale exports cleared, genuine failures still raise ---------
@@ -260,10 +309,74 @@ def test_kind_notice_and_revision_log():
     assert meta['notebook_kind'] == 'WORKSHOP'
     assert keys.index('notebook_kind') == keys.index('notebook_mode') + 1
     assert meta['notebook_spec'] == '2.2'
-    assert meta['review_revisions'][-1]['change'] == 'review round 2026-10-12 (DIT2-M1, DIT2-m1..m6)'
+    changes = [r['change'] for r in meta['review_revisions']]
+    assert 'review round 2026-10-12 (DIT2-M1, DIT2-m1..m6)' in changes
+    assert changes[-1] == 'peer-review follow-up (CX1-CX10)'
     assert 'pending' not in meta['review_revisions'][0]['hosted_execution']
     opening = cell('11007f70')
     assert '**Notebook kind:** `WORKSHOP`' in opening
     notice = opening.index('> **⚠️ Notice.** For research, training and evaluation only.')
     assert notice < opening.index('By the end you will be able to:')
     assert 'Data you bring stays in your runtime' in opening and 'accept no liability' in opening
+
+
+# ---- Peer-review follow-up: training exposure (CX1), provenance fields (CX7), label mapping (CX8) ----------
+
+def test_wording_training_exposure_is_split_by_stage():
+    text = cell('bd966b5d')
+    assert 'Overlap with pre-training is therefore certain' not in text
+    assert '*Parent corpus.*' in text and '**possible but not verified**' in text and '**unknown**' in text
+    assert 'not shown to be held out from either training stage' in text
+    export = cell('8be87936')
+    assert 'and so overlaps DiT' not in export and 'possible but unverified' in export
+    assert '"unsupervised_pretraining": "possible, unverified"' in export
+    assert 'not shown to be held out from either training stage' in cell('guided-03')
+    assert "were part of DiT's IIT-CDIP pre-training corpus" not in cell('8cf21741')
+
+
+def test_manifest_keeps_source_bytes_key_and_adds_rgb_png_hash():
+    export = cell('8be87936')
+    assert '"source_bytes_sha256":r["source_bytes_sha256"]' in export
+    assert '"rgb_png_sha256":sha256_file(r["png"])' in export
+    assert '"sample_manifest_fields"' in export and 're-encoded in RGB' in export
+
+
+class FakeFeature:
+    def __init__(self, **attrs):
+        self.__dict__.update(attrs)
+
+
+class FakeDataset(list):
+    def __init__(self, labels, names):
+        super().__init__({'label': label} for label in labels)
+        self.features = {'label': FakeFeature(names=names), 'image': FakeFeature(decode=True)}
+
+    def __getitem__(self, key):
+        if key == 'label':
+            return [row['label'] for row in self]
+        return list.__getitem__(self, key)
+
+
+def _dataset_stage(tmp_path, monkeypatch, names):
+    import document_classification_workshop as stages
+    data = FakeDataset([i % 16 for i in range(992)], names)
+    monkeypatch.setattr(stages, 'CONFIG', {'dataset_id': 'fake', 'dataset_revision': '0' * 40})
+    monkeypatch.setattr(stages, 'WORK', tmp_path)
+    monkeypatch.setattr(stages, 'load_pinned_test_split', lambda: data)
+    stages.stage_dataset()
+    return json.loads((tmp_path / 'state' / 'dataset.json').read_text(encoding='utf-8'))
+
+
+def test_dataset_stage_exports_label_names_and_full_split_counts(tmp_path, monkeypatch, capsys):
+    record = _dataset_stage(tmp_path, monkeypatch, list(LABELS))
+    assert record['label_names'] == LABELS and record['label_names_match_class_order'] is True
+    assert record['test_split_class_counts'] == {name: 62 for name in LABELS}
+    assert record['image_feature_decodes'] is True and record['test_rows'] == 992
+    assert 'label names match' in capsys.readouterr().out
+
+
+def test_dataset_stage_refuses_a_permuted_label_mapping(tmp_path, monkeypatch):
+    names = list(LABELS)
+    names[0], names[15] = names[15], names[0]
+    with pytest.raises(RuntimeError, match='differ from the notebook'):
+        _dataset_stage(tmp_path, monkeypatch, names)
