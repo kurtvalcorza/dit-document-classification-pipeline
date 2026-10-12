@@ -427,7 +427,8 @@ def build_sample(dataset_test, page_dir):
 def stage_sample():
     sample = build_sample(load_pinned_test_split(), WORK / "pages" / "sample")
     write_state("sample.json", sample)
-    print({"sample_images": len(sample["records"]), "sample_digest": sample["sample_digest"]})
+    print(f"sample stage: {len(sample['records'])} pages decoded and saved as lossless PNG; "
+          "the notebook checks their pixel digests next")
 
 
 # ---- model load and inference ----------------------------------------------------------------------------
@@ -563,7 +564,7 @@ def stage_predict(job_dir):
         "scored_paths": scored_paths,
         "device": device(),
     }, indent=2), encoding="utf-8")
-    print({"pages": len(records), "batches": len(timings), "device": device()})
+    print(f"predict stage: {len(records)} pages scored in {len(timings)} batches on {device()}")
 
 
 # ---- command line ---------------------------------------------------------------------------------------

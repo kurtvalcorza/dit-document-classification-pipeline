@@ -69,6 +69,15 @@ def namespace(tmp_path, monkeypatch, vector=None):
     return ns, calls
 
 
+def assert_refused(ns, calls, capsys, message, tmp_path):
+    """DIT2-m3: a refused BYOD input prints one 'Refused:' line, classifies nothing, writes nothing."""
+    out = capsys.readouterr().out
+    refusals = [line for line in out.splitlines() if line.startswith('Refused:')]
+    assert len(refusals) == 1 and message in refusals[0] and '.. Nothing' not in refusals[0], out
+    assert 'Traceback' not in out and ns['byod_result'] is None and ns['byod_refusal']
+    assert calls == [] and not list(tmp_path.glob('outputs/byod_*'))
+
+
 def image_bytes(color='white'):
     stream = io.BytesIO()
     Image.new('RGB', (40, 48), color).save(stream, format='PNG')
@@ -148,16 +157,16 @@ def test_byod_full_optional_flow_exports_unique_ids(tmp_path, monkeypatch, label
     ('page.png,letter\nextra.png,form\n', 'extra='),
     ('page.png,unknown\n', 'Unknown RVL-CDIP'),
 ])
-def test_invalid_labels_fail_before_inference(tmp_path, monkeypatch, rows, message):
+def test_invalid_labels_fail_before_inference(tmp_path, monkeypatch, capsys, rows, message):
     ns, calls = namespace(tmp_path, monkeypatch)
     image = tmp_path/'page.png'
     image.write_bytes(image_bytes())
     labels = tmp_path/'labels.csv'
     labels.write_text('filename,label\n'+rows)
     ns.update(USE_BYOD=True, BYOD_PATH=str(image), BYOD_LABELS_PATH=str(labels))
-    with pytest.raises(ValueError, match=message):
-        exec(cell('907b911c'), ns)
-    assert calls == [] and not (tmp_path/'outputs').exists()
+    capsys.readouterr()
+    exec(cell('907b911c'), ns)
+    assert_refused(ns, calls, capsys, message, tmp_path)
 
 
 # --- Review fixes (DIT-M01..M03, DIT-m01..m04). Model doubles only: not real-model evidence.
@@ -220,14 +229,14 @@ def tiff_bytes(frames):
     return stream.getvalue()
 
 
-def test_multi_page_tiff_rejected_before_inference(tmp_path, monkeypatch):
+def test_multi_page_tiff_rejected_before_inference(tmp_path, monkeypatch, capsys):
     ns, calls = namespace(tmp_path, monkeypatch)
     path = tmp_path/'scan.tiff'
     path.write_bytes(tiff_bytes(2))
     ns.update(USE_BYOD=True, BYOD_PATH=str(path))
-    with pytest.raises(ValueError, match='scan.tiff: contains 2 pages'):
-        exec(cell('907b911c'), ns)
-    assert calls == [] and not (tmp_path/'outputs').exists()
+    capsys.readouterr()
+    exec(cell('907b911c'), ns)
+    assert_refused(ns, calls, capsys, 'scan.tiff: contains 2 pages', tmp_path)
 
 
 def test_single_page_tiff_accepted(tmp_path, monkeypatch):
@@ -252,14 +261,14 @@ def test_phone_mpo_jpeg_is_one_page(tmp_path, monkeypatch):
     assert calls == [1] and ns['byod_records'][0]['image'].getpixel((0, 0)) == (255, 255, 255)
 
 
-def test_oversized_page_rejected_from_header(tmp_path, monkeypatch):
+def test_oversized_page_rejected_from_header(tmp_path, monkeypatch, capsys):
     ns, calls = namespace(tmp_path, monkeypatch)
     path = tmp_path/'wide.png'
     Image.new('L', (5000, 40), 255).save(path)
     ns.update(USE_BYOD=True, BYOD_PATH=str(path))
-    with pytest.raises(ValueError, match='side outside'):
-        exec(cell('907b911c'), ns)
-    assert calls == []
+    capsys.readouterr()
+    exec(cell('907b911c'), ns)
+    assert_refused(ns, calls, capsys, 'side outside', tmp_path)
 
 
 @pytest.mark.parametrize(('text', 'message'), [
@@ -267,16 +276,16 @@ def test_oversized_page_rejected_from_header(tmp_path, monkeypatch):
     ('filename,label\npage.png,letter,extra\n', 'exactly 2 fields'),
     ('filename,label\npage.png\n', 'exactly 2 fields'),
 ])
-def test_malformed_label_csv_schema_refused(tmp_path, monkeypatch, text, message):
+def test_malformed_label_csv_schema_refused(tmp_path, monkeypatch, capsys, text, message):
     ns, calls = namespace(tmp_path, monkeypatch)
     image = tmp_path/'page.png'
     image.write_bytes(image_bytes())
     labels = tmp_path/'labels.csv'
     labels.write_text(text)
     ns.update(USE_BYOD=True, BYOD_PATH=str(image), BYOD_LABELS_PATH=str(labels))
-    with pytest.raises(ValueError, match=message):
-        exec(cell('907b911c'), ns)
-    assert calls == [] and not (tmp_path/'outputs').exists()
+    capsys.readouterr()
+    exec(cell('907b911c'), ns)
+    assert_refused(ns, calls, capsys, message, tmp_path)
 
 
 @pytest.mark.parametrize('labelled', [False, True])
