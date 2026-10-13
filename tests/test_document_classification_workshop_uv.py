@@ -167,7 +167,9 @@ def test_carrier_cell_writes_files_that_hash_to_the_lock(tmp_path):
 def test_uv_revision_is_logged_in_the_notebook_metadata():
     revisions = _notebook()["metadata"]["dimer"]["review_revisions"]
     entry = next(r for r in revisions if r["date"] == "2026-10-03")
-    assert entry["change"] == "uv isolated environment" and entry["hosted_execution"] == "pending"
+    # DIT2-m6: the 2026-10-03 Colab CLI T4 run of this revision is recorded; the entry no longer says pending.
+    assert entry["change"] == "uv isolated environment" and entry["hosted_execution"].startswith("recorded:")
+    assert "8ef7fae" in entry["hosted_execution"]
     assert entry["pins_changed"] == "none"
 
 

@@ -318,13 +318,26 @@ def load_pinned_test_split():
 
 def stage_dataset():
     dataset_test = load_pinned_test_split()
+    # Numeric labels are read by position in LABELS, so the dataset's label names must match that order.
+    label_names = list(getattr(dataset_test.features["label"], "names", None) or [])
+    if label_names and label_names != LABELS:
+        raise RuntimeError(f"Dataset label names {label_names} differ from the notebook's class order "
+                           f"{LABELS}")
+    class_counts = Counter(int(label) for label in dataset_test["label"])
+    image_feature = dataset_test.features.get("image")
     record = {
         "dataset_id": CONFIG["dataset_id"],
         "dataset_revision": CONFIG["dataset_revision"],
         "test_rows": len(dataset_test),
+        "label_names": label_names or None,
+        "label_names_match_class_order": bool(label_names),
+        "test_split_class_counts": {LABELS[i]: class_counts.get(i, 0) for i in range(16)},
+        "image_feature_decodes": bool(getattr(image_feature, "decode", True)),
     }
     write_state("dataset.json", record)
-    print(record)
+    names = "match the notebook's class order" if label_names else "are not provided by the dataset"
+    print(f"dataset stage: {len(dataset_test)} test rows; label names {names}; "
+          f"rows per class: {sorted(set(record['test_split_class_counts'].values()))}")
 
 
 def select_sample_indices(labels, sample_seed, sample_per_class):
@@ -427,7 +440,8 @@ def build_sample(dataset_test, page_dir):
 def stage_sample():
     sample = build_sample(load_pinned_test_split(), WORK / "pages" / "sample")
     write_state("sample.json", sample)
-    print({"sample_images": len(sample["records"]), "sample_digest": sample["sample_digest"]})
+    print(f"sample stage: {len(sample['records'])} pages decoded and saved as lossless PNG; "
+          "the notebook checks their pixel digests next")
 
 
 # ---- model load and inference ----------------------------------------------------------------------------
@@ -563,7 +577,7 @@ def stage_predict(job_dir):
         "scored_paths": scored_paths,
         "device": device(),
     }, indent=2), encoding="utf-8")
-    print({"pages": len(records), "batches": len(timings), "device": device()})
+    print(f"predict stage: {len(records)} pages scored in {len(timings)} batches on {device()}")
 
 
 # ---- command line ---------------------------------------------------------------------------------------

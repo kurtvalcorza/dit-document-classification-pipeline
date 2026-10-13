@@ -2,7 +2,7 @@
 
 ## Current decision
 
-`tutorials/DIMER_Document_Type_Classification_RVL_CDIP_Workshop.ipynb` remains **Candidate** under DIMER Notebook Specification 2.2. Its default path has one successful hosted execution (Google Colab T4, 2026-09-26, recorded below) on notebook blob `56fb04d9`. The 2026-09-28 review fixes (below) change code cells. The fixed revision (commit `6d2e708`, notebook blob `4b1e9295`) has one successful hosted default-path execution (Google Colab T4, 2026-09-28, recorded below) with outputs identical to the 2026-09-26 run. BYOD and `RUN_ROBUSTNESS=False` have no hosted execution on this revision. The bring-your-own-pages branch (REL12) has no hosted execution yet. Checkpoint redistribution remains `pending-review`, as declared in the notebook, and local tests do not change it. The 2026-10-03 uv isolated environment change (below) produces notebook blob `41fb7b1a` (commit `8ef7fae`), which has one successful hosted default-path execution (Colab CLI sequential execution on a fresh Colab Tesla T4, 2026-10-03, recorded below) with metrics, digests and figures identical to the 2026-09-28 run.
+`tutorials/DIMER_Document_Type_Classification_RVL_CDIP_Workshop.ipynb` remains **Candidate** under DIMER Notebook Specification 2.2. Its default path has one successful hosted execution (Google Colab T4, 2026-09-26, recorded below) on notebook blob `56fb04d9`. The 2026-09-28 review fixes (below) change code cells. The fixed revision (commit `6d2e708`, notebook blob `4b1e9295`) has one successful hosted default-path execution (Google Colab T4, 2026-09-28, recorded below) with outputs identical to the 2026-09-26 run. BYOD and `RUN_ROBUSTNESS=False` have no hosted execution on this revision. The bring-your-own-pages branch (REL12) has no hosted execution yet. Checkpoint redistribution remains `pending-review`, as declared in the notebook, and local tests do not change it. The 2026-10-03 uv isolated environment change (below) produces notebook blob `41fb7b1a` (commit `8ef7fae`), which has one successful hosted default-path execution (Colab CLI sequential execution on a fresh Colab Tesla T4, 2026-10-03, recorded below) with metrics, digests and figures identical to the 2026-09-28 run. The 2026-10-13 review fixes (review round 2026-10-12, below) produce notebook blob `1a5f1514`, and the peer-review follow-up (below) blob `d20171b1` (commit `00739be`). Blob `d20171b1` has one successful hosted default-path execution (Colab CLI sequential execution on a fresh Colab Tesla T4, 2026-10-12, recorded below) with every existing metric, count and digest equal to the 2026-10-03 run; blob `1a5f1514` was not run on its own.
 
 ## Verification coverage (automatic versus manual)
 
@@ -186,5 +186,87 @@ Output comparison with the 2026-09-28 run (difflib on normalised text outputs, p
 | Date | Commit | Notebook blob | Executor | Path | Result | Evidence |
 |---|---|---|---|---|---|---|
 | 2026-10-03 | `8ef7fae` | `41fb7b1a` | Colab CLI 0.7.4, fresh Colab Tesla T4 | default only, CLI sequential execution (not a browser Run all) | PASS, 20/20 cells; metrics equal to 2026-09-28 | [notebook](execution-evidence/2026-10-03/DIMER_Document_Type_Classification_RVL_CDIP_Workshop_8ef7fae_colab-cli-t4.ipynb) |
+| 2026-10-12 | `00739be` | `d20171b1` | Colab CLI 0.7.4, fresh Colab Tesla T4 | default only, CLI sequential execution (not a browser Run all) | PASS, 20/20 cells; existing metrics equal to 2026-10-03 | [notebook](execution-evidence/2026-10-12/DIMER_Document_Type_Classification_RVL_CDIP_Workshop_00739be_colab-cli-t4.ipynb) |
 
 Still open: a hosted BYOD run with the real model (REL12), a hosted `RUN_ROBUSTNESS=False` run, and the observed learner walkthrough. Status remains **Candidate**; redistribution stays `pending-review`.
+
+## Review fixes — review round 2026-10-12 (2026-10-13)
+
+The review of commit `8b68d44` (notebook blob `41fb7b1a`) found 1 Major, 6 Minor and 1 Suggestion (DIT2-*). This change fixes DIT2-M1 and DIT2-m1 to m6 and produces notebook blob `1a5f1514`. There is no notebook generator: the cells were edited by a blob-gated, anchor-asserting script kept with the review records, and cell `uvcarrier` was regenerated with `tools/build_document_classification_workshop_carrier.py`. DIT2-S1 (a personal-information sentence about the RVL-CDIP sample pages) is not addressed.
+
+| Finding | Fix | Cells |
+|---|---|---|
+| DIT2-M1 confusion analysis treats noisy gold labels as truth | Section 13 says every count is out of 20 pages. Section 14 adds a What-to-notice: 1–2-page pairs are anecdotes, and Larson, Lim and Leach (2023, arXiv:2306.12550) estimate about 8.1% RVL-CDIP label noise (quoted, not measured here), so some errors may be label errors. The confusion list prints `k of 20 pages`. Section 18 adds an activity (model error, label error or ambiguous page) with a collapsed sample answer, and the conclusion asks for the count and the label judgement. | `52854116`, `474bc879`, `601e66d3`, `1d4d0e0d`, `guided-03` |
+| DIT2-m1 evaluation-source provenance | Section 7 cites the dataset card's derivation notebook and says it was not inspected, states the 1,000-pixel resize, and replaces the official-test remedy with de-duplication against the RVL-CDIP training split. `provenance.json` gains three `evaluation_limitations` entries. | `bd966b5d`, `8cf21741`, `8be87936` |
+| DIT2-m2 robustness reporting | The table prints `correct/16` and `unchanged/16` beside each fraction and says what one page is worth; the probe pages already wrong with no transformation are listed. The before/after example now prefers a changed `rotate90` page whose original prediction was correct, then the previous rule, and says whether the original was correct. The terminal summary prints the counts. Display only: `robustness_summary` and `robustness.csv` are unchanged. | `3891d68d`, `3f050f2d`, `guided-01`, `d60ee8bb` |
+| DIT2-m3 BYOD refusals and stale exports | Input-rule violations raise `BYODInputError` (a `ValueError`); the BYOD cell catches only that class and prints one `Refused:` line with no traceback. Empty or missing paths, unreadable images or ZIPs and unreadable labels files are refusals too. Earlier `byod_*` exports are removed before validation. Genuine failures still raise. The terminal cell does not require BYOD files after a refusal. `run_stage` no longer prints the streamed log a second time on failure. | `907b911c`, `442373b0`, `d60ee8bb`, `525cb60f`, `guided-04` |
+| DIT2-m4 duplicated output | The `sample` and `predict` stages print one labelled line instead of a dict the kernel repeats. Section 6 explains the slow-image-processor message and the `reduce_labels` warning once. Only those two `print` calls changed in `tools/document_classification_workshop.py`; every other function is AST-identical. | stage file, `uvcarrier`, `6fdf13b3` |
+| DIT2-m5 template guided text | The opening lists six objectives with observable verbs; the roadmap, success criteria, checkpoint and conclusion name this notebook's single model, baselines, confusion and robustness analyses. | `11007f70`, `guided-00`, `8a55d1c1`, `772e7bdb`, `guided-02`, `guided-03` |
+| DIT2-m6 stale declaration | Notebook Specification **2.2 is kept** (repository validator pins it). `metadata.dimer.notebook_kind` is `WORKSHOP`, the opening shows the kind and the canonical use notice, the 2026-10-03 revision entry now records its hosted run, and a 2026-10-13 entry describes this change. | `11007f70`, metadata |
+
+### Offline verification (not clean-runtime evidence)
+
+CI's dependency budget (NumPy 2.5.3, Pillow 11.3.0, packaging, pytest 8.4.2, ruff 0.16.6), CPU only: `ruff check src tests tools` passes; the carrier `--check` and `tools/validate_release_assets.py` pass; pytest 128 passed (baseline 105 passed), including `tests/test_dit2_review_fixes.py`, whose 23 tests all fail on the reviewed revision. The review's acceptance checks report DIT2-M1 and m1–m5 fail before and pass after; DIT2-m6 still fails only on its 2.5 criterion, by instruction. All of this uses model doubles and synthetic pages; no real-model inference ran, because the notebook is Linux x86_64 only.
+
+### Remaining before promotion
+
+- A hosted default-path run of the final blob (`d20171b1` after the follow-up below; REL14). Default metrics are expected to equal the 2026-10-03 run, because no metric-computing code changed.
+- A browser BYOD run with one accepted and one refused input (REL12), and a hosted `RUN_ROBUSTNESS=False` run.
+- Status remains **Candidate**; redistribution stays `pending-review`.
+
+### Peer-review follow-up (CX1–CX10) — 2026-10-13
+
+A second review of the PR head (`48a31d9`, notebook blob `1a5f1514`) questioned how the guidance interprets the measurements; the calculations were not disputed. This follow-up produces notebook blob `d20171b1`. No existing computed number changes; the additions are displays, export fields and text.
+
+| Item | Change | Cells / files |
+|---|---|---|
+| CX1 training exposure | Section 7 separates parent-corpus membership (IIT-CDIP), unsupervised pre-training exposure (possible, unverified) and supervised fine-tuning exposure (unknown), and says the pages are not shown to be held out from either stage. The provenance limitation no longer says every page overlaps pre-training, and a `training_exposure` object records the three answers. Limitations and the conclusion prompt match. | `bd966b5d`, `8be87936`, `8cf21741`, `guided-03` |
+| CX2 label-noise estimate | Kept as background with its audited population (1,000 pages per class sampled from the RVL-CDIP test split, no confidence interval reported) and the sentence "This estimate cannot be used to correct our accuracy or determine which disagreements are label errors." The ceiling wording is removed; accuracy is read as agreement with the supplied labels. | `601e66d3`, `8be87936`, `8cf21741` |
+| CX3 label-review activity | Tentative visual judgements, not label adjudication; options include "another class may fit" and "cannot determine"; short class descriptions; full-resolution page paths; a statement that reviewing selected disagreements cannot estimate overall label noise. | `1d4d0e0d`, `guided-03` |
+| CX4 crop probe | Center crop is described and labelled as a partial-page probe (about 64% of the area kept, enlarged by preprocessing, label possibly no longer observable), separate from orientation and degradation probes; the table gains a probe-kind column. | `c0ca8456`, `3891d68d` |
+| CX5 paired outcomes | "Shows nothing" replaced by "no change in binary correctness"; a paired-outcome table per variant (correct→wrong, wrong→correct, wrong→other wrong, unchanged) from existing predictions; the before/after pair is labelled as outcome-selected. | `3f050f2d`, `3891d68d` |
+| CX6 reference values | Random top-3 (3/16) and majority macro F1 (1/136) are computed and printed after the existing baseline code, exported under `metrics.json` `reference_values`, and used in the guidance and terminal summary. | `8a55d1c1`, `bbc5b89f`, `772e7bdb`, `8be87936`, `d60ee8bb`, `guided-02`, `11007f70` |
+| CX7 byte digest | `source_bytes_sha256` keeps its name; `sample_manifest_fields` documents that it hashes a PNG re-encoded in RGB when the dataset returns decoded images, and each manifest row gains `rgb_png_sha256`. | `8be87936` |
+| CX8 label mapping | The `dataset` stage checks the dataset's label names against the notebook's class order (it stops on a mismatch) and records them, the full-split per-class counts and whether the image feature decodes; provenance exports them. Only `stage_dataset` changed in the stage file. | `tools/document_classification_workshop.py`, `uvcarrier`, `8be87936` |
+| CX9 selective classification | Called an exploratory selective-classification analysis, not calibration; a threshold picked on these pages needs independent evaluation. | `ae1644b2` |
+| CX10 summaries | The terminal summary leads with counts (`k/320 pages`) and three decimals. | `d60ee8bb` |
+
+Offline verification (not clean-runtime evidence): ruff, the carrier `--check` and the validator pass; pytest 135 passed (128 before this follow-up). The wording tests are labelled as wording checks. The 11 new or revised tests fail on `48a31d9`. The review's acceptance checks are unchanged from the previous head (DIT2-M1 and m1–m5 pass; DIT2-m6 fails only on its 2.5 criterion).
+
+Remaining before promotion: a hosted default-path run of blob `d20171b1` (REL14), a browser BYOD run with one accepted and one refused input (REL12), and a hosted `RUN_ROBUSTNESS=False` run. Status remains **Candidate**.
+
+### Colab CLI execution of revision `00739be` — 2026-10-12
+
+[Executed notebook](execution-evidence/2026-10-12/DIMER_Document_Type_Classification_RVL_CDIP_Workshop_00739be_colab-cli-t4.ipynb), archived byte for byte, SHA-256 `19bba9066ee0736e768b696ba79547227dfb9e04d90db389b96812773a9eef47`.
+
+- **Executor.** Colab CLI 0.7.4, fresh Colab Tesla T4 (session `suite-dit-00739be-d823`, created for this run and stopped afterwards; started 2026-10-12 21:09 UTC, finished 21:13 UTC). The notebook was fetched at the full commit SHA `00739beba93cbaf0d24b207f5cbe3dd77908bff8` and its git blob `d20171b192b6c4fbb086eaba34e0ed868291e5fb` checked before the VM was allocated.
+- **Evidence boundary.** CLI sequential execution of the code cells in one kernel, not a browser Run all: forms were not rendered, no upload or download dialog was answered, and only the default path ran. The CLI does not set execution counts; order is evidenced by its `Executing cell k/20` log lines.
+- **Source match.** All 50 cells have the same IDs, order and source as blob `d20171b1`.
+- **Execution.** 20/20 code cells executed in order in one pass, no error outputs, no restart. Wall time 239.1 s including session start and stop.
+- **Runtime.** Isolated environment: CPython 3.12.12, torch 2.14.0+cu130, torchvision 0.29.0+cu130, Transformers 4.57.6, datasets 4.1.1, huggingface_hub 0.36.2, NumPy 2.1.3, Pillow 11.3.0, Tesla T4 (15,637,086,208 bytes). Kernel: Python 3.13.15, NumPy 2.1.3, Pillow 11.3.0. Peak GPU memory during sample inference: 498,254,848 bytes (unchanged). Warnings: the slow-image-processor notice and the `reduce_labels` `UserWarning`, both explained in Section 6.
+- **Settings.** Defaults: `RUN_ROBUSTNESS=True`, `USE_BYOD=False`, `RUN_SELECTIVE_CLASSIFICATION=False`.
+
+Comparison with the 2026-10-03 run of blob `41fb7b1a` (normalised printed output, line by line). Every existing number is equal:
+
+| Measure | 2026-10-03 (blob `41fb7b1a`) | 2026-10-12 (blob `d20171b1`) |
+|---|---:|---:|
+| Accuracy | 0.953125 (305/320) | 0.953125 (305/320) |
+| Macro F1 | 0.9530115891276032 | 0.9530115891276032 |
+| Top-3 accuracy | 0.99375 (318/320) | 0.99375 (318/320) |
+| Pages with a tied top-1 score | 0 | 0 |
+| Sample digest | `4ca6881427c4…` | `4ca6881427c4…` |
+| Conversion parity, max abs logit difference | 0.0 | 0.0 |
+| Per-class table, confusion pairs and counts | — | identical |
+| Robustness accuracy: original / rotate90 / rotate180 / low resolution / centre crop | 0.812 / 0.500 / 0.688 / 0.750 / 0.812 | 0.812 / 0.500 / 0.688 / 0.750 / 0.812 |
+| Robustness stability | 1.000 / 0.625 / 0.875 / 0.938 / 1.000 | 1.000 / 0.625 / 0.875 / 0.938 / 1.000 |
+
+The only differing printed lines are the changes this PR makes: the `dataset`, `sample` and `predict` stages print one labelled line (the dataset line confirms that the label names match the class order, 62 test rows per class); the new reference values (random top-3 0.1875, majority macro F1 0.00735); confusion pairs printed as `k of 20 pages`; the robustness table with `correct/16`, `unchanged/16` and probe-kind columns, the three probe pages already wrong at baseline and the paired-outcome table (rotate90 5 correct→wrong, 1 wrong→other wrong; rotate180 2 correct→wrong; low resolution 1 correct→wrong; centre crop none); the before/after example `rvl-derived-test-0141` (advertisement, original prediction correct) instead of `0319`, as the new selection rule specifies; and the counts-first terminal summary at three decimals. Model load and forward timings differ (0.55 s vs 0.62 s; 2.86 s vs 3.09 s), as expected between runtimes. The BYOD refusal handler was not exercised (`USE_BYOD=False`).
+
+| Journey | Verdict |
+|---|---|
+| Default path (fresh T4, CLI sequential execution) | **Pass.** Completes to the terminal summary; every existing metric, count and digest equals the 2026-10-03 run; the PR's additive outputs render. |
+| BYOD (accepted and refused input) | Not assessed (CLI): `USE_BYOD=False`, and the CLI cannot answer an upload. |
+| `RUN_ROBUSTNESS=False` | Not assessed (CLI). |
+| Browser Run all, forms and galleries as rendered in a browser | Not assessed (CLI). |
+
+Status remains **Candidate**. Still open: a browser BYOD run with one accepted and one refused input (REL12) and a hosted `RUN_ROBUSTNESS=False` run.
